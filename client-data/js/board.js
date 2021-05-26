@@ -43,6 +43,7 @@ Tools.svg = document.getElementById("canvas");
 Tools.drawingArea = Tools.svg.getElementById("drawingArea");
 
 //Initialization
+Tools.lastTool = null;
 Tools.curTool = null;
 Tools.drawingEvent = true;
 Tools.showMarker = true;
@@ -251,7 +252,7 @@ Tools.add = function (newTool) {
 	Tools.HTML.addTool(newTool.name, newTool.icon, newTool.iconHTML, newTool.shortcut, newTool.oneTouch);
 };
 
-Tools.change = function (toolName) {
+Tools.change = function (toolName, changeLastTool = true) {
 	var newTool = Tools.list[toolName];
 	var oldTool = Tools.curTool;
 	if (!newTool) throw new Error("Trying to select a tool that has never been added!");
@@ -289,6 +290,7 @@ Tools.change = function (toolName) {
 
 		//Add the new event listeners
 		Tools.addToolListeners(newTool);
+		if(changeLastTool) Tools.lastTool = Tools.curTool;
 		Tools.curTool = newTool;
 	}
 
@@ -321,8 +323,25 @@ Tools.removeToolListeners = function removeToolListeners(tool) {
 			Tools.change(Tools.curTool.name);
 		}
 	}
+
+	function handlePanControl(active, evt) {
+		if (evt.keyCode === 32) {
+			evt.preventDefault();
+
+			if (active && Tools.curTool.name !== "Hand") {		
+				Tools.change("Hand");
+				// if select tool is selected, switch it to general Hand Tool
+				if (Tools.curTool.secondary.active == active) Tools.change("Hand", false);
+			}
+			else if(!active) {
+				Tools.change(Tools.lastTool.name);
+			}
+		}
+	}
 	window.addEventListener("keydown", handleShift.bind(null, true));
 	window.addEventListener("keyup", handleShift.bind(null, false));
+	window.addEventListener("keydown", handlePanControl.bind(null, true));
+	window.addEventListener("keyup", handlePanControl.bind(null, false));
 })();
 
 Tools.send = function (data, toolName) {
