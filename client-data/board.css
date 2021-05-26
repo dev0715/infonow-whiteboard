@@ -130,39 +130,10 @@ html, body, svg {
 	border-radius: 10px;
 }
 
-
-/* #menu .tool {
-	position: relative;
-	-webkit-touch-callout: none;
-	-webkit-user-select: none; 
-	-khtml-user-select: none;
-	-moz-user-select: none; 
-	-ms-user-select: none; 
-	user-select: none; 
-	pointer-events: auto;
-	white-space: nowrap;
-	list-style-position:inside;
-	margin-top: 6px;
-	border:1px solid #fff;
-	text-decoration:none;
-	cursor:pointer;
-	background: #ffffff;
-	height: 40px;
-	line-height: 40px;
-	border-radius: 0px;
-	max-width: 40px;
-	transition-duration: .2s;
-	overflow: hidden;
-	width: max-content;
-	box-shadow: inset 0 0 3px #8FA2BC;
-}  */
-
-#menu .tool:hover {
-	/* max-width: 100%; */
-	
+#menu .tool:focus {
+	max-width: 100%;
+	outline: none!important;
 }
-
-
 
 @media (hover: none), (pointer: coarse) {
 	#menu .tool:hover {
@@ -171,6 +142,7 @@ html, body, svg {
 
 	#menu .tool:focus {
 		max-width: 100%;
+		outline: none!important;
 	}
 
 	#menu {
@@ -203,13 +175,14 @@ html, body, svg {
 	filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.3))!important;
 }
 
-#menu .tool.hasSecondary.curTool .primaryIcon{
-	filter: invert(1) brightness(1.6) drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.3));
-}
-
+#menu .tool.hasSecondary.curTool .primaryIcon,
 #menu .tool.curTool .tool-icon{
 	filter: invert(1) brightness(1.6) drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.3));
 }
+
+/* #menu .tool.curTool .tool-icon{
+	filter: invert(1) brightness(1.6) drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.3));
+} */
 
 #menu .tool-icon {
 	display: inline-block;

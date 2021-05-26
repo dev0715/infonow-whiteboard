@@ -35,6 +35,8 @@
         scale: 1.0
     };
     var moved = false, pressed = false;
+    var zoomType = "in";
+
 
     function zoom(origin, scale) {
         var oldScale = origin.scale;
@@ -138,35 +140,21 @@
 
     function release(x, y, evt, isTouchEvent) {
         if (pressed && !moved) {
-            var delta = (evt.shiftKey === true) ? -1 : 1;
+            var delta = 0;
+            delta = zoomType === "out" ? -1 : 1;
             var scale = Tools.getScale() * (1 + delta * ZOOM_FACTOR);
             zoom(origin, scale);
         }
         pressed = false;
     }
 
-    function key(down) {
-        return function (evt) {
-            if (evt.key === "Shift") {
-                Tools.svg.style.cursor = "zoom-" + (down ? "out" : "in");
-            }
-        }
-    }
-
     function getClientY(evt, isTouchEvent) {
         return isTouchEvent ? evt.changedTouches[0].clientY : evt.clientY;
     }
 
-    var keydown = key(true);
-    var keyup = key(false);
-
-    function onstart() {
-        window.addEventListener("keydown", keydown);
-        window.addEventListener("keyup", keyup);
-    }
-    function onquit() {
-        window.removeEventListener("keydown", keydown);
-        window.removeEventListener("keyup", keyup);
+    function toggleZoom() {
+        zoomType = zoomType == "out" ? "in" : "out"
+        Tools.svg.style.cursor = "zoom-"+zoomType;
     }
 
     var zoomTool = {
@@ -177,10 +165,16 @@
             "move": move,
             "release": release,
         },
-        "onstart": onstart,
-        "onquit": onquit,
+        "secondary": {
+			"name": "zoom-out",
+			"icon": "tools/zoom/zoom-out.svg",
+			"active": false,
+			"switch": function() {
+				toggleZoom()
+			},
+		},
         "mouseCursor": "zoom-in",
-        "icon": "tools/zoom/icon.svg",
+        "icon": "tools/zoom/zoom-in.svg",
         "helpText": "click_to_zoom",
         "showMarker": true,
     };

@@ -30,6 +30,7 @@
 	var input = document.createElement("input");
 	input.id = "textToolInput";
 	input.type = "text";
+	input.placeholder = "Comment..."
 	input.setAttribute("autocomplete", "off");
 
 	var curText = {
