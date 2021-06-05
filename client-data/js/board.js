@@ -50,6 +50,9 @@ Tools.showMarker = true;
 Tools.showOtherCursors = true;
 Tools.showMyCursor = true;
 
+Tools.messages = [];
+Tools.lastMessage = null;
+
 Tools.isIE = /MSIE|Trident/.test(window.navigator.userAgent);
 
 Tools.socket = null;
@@ -100,7 +103,7 @@ function saveBoardNametoLocalStorage() {
 	try {
 		recentBoards = JSON.parse(localStorage.getItem(key));
 		if (!Array.isArray(recentBoards)) throw new Error("Invalid type");
-	} catch(e) {
+	} catch (e) {
 		// On localstorage or json error, reset board list
 		recentBoards = [];
 		console.log("Board history loading error", e);
@@ -290,7 +293,7 @@ Tools.change = function (toolName, changeLastTool = true) {
 
 		//Add the new event listeners
 		Tools.addToolListeners(newTool);
-		if(changeLastTool) Tools.lastTool = Tools.curTool;
+		if (changeLastTool) Tools.lastTool = Tools.curTool;
 		Tools.curTool = newTool;
 	}
 
@@ -325,24 +328,30 @@ Tools.removeToolListeners = function removeToolListeners(tool) {
 	}
 
 	function handlePanControl(active, evt) {
+		let textToolElem = document.getElementById("textToolInput");
+
+		if (textToolElem && textToolElem === document.activeElement) return;
+
 		if (evt.keyCode === 32) {
 			evt.preventDefault();
 
-			if (active && Tools.curTool.name !== "Hand") {		
+			if (active && Tools.curTool.name !== "Hand") {
 				Tools.change("Hand");
 				// if select tool is selected, switch it to general Hand Tool
 				if (Tools.curTool.secondary.active == active) Tools.change("Hand", false);
 			}
-			else if(!active) {
+			else if (!active) {
 				Tools.change(Tools.lastTool.name);
 			}
 		}
+		
 	}
 	window.addEventListener("keydown", handleShift.bind(null, true));
 	window.addEventListener("keyup", handleShift.bind(null, false));
 	window.addEventListener("keydown", handlePanControl.bind(null, true));
 	window.addEventListener("keyup", handlePanControl.bind(null, false));
 })();
+
 
 Tools.send = function (data, toolName) {
 	toolName = toolName || Tools.curTool.name;
@@ -358,9 +367,12 @@ Tools.send = function (data, toolName) {
 
 Tools.drawAndSend = function (data, tool) {
 	if (tool == null) tool = Tools.curTool;
+	startDrawing(data);
+	Tools.lastMessage = data;
 	tool.draw(data, true);
 	Tools.send(data, tool.name);
 };
+
 
 //Object containing the messages that have been received before the corresponding tool
 //is loaded. keys : the name of the tool, values : array of messages for this tool
@@ -416,20 +428,12 @@ function handleMessage(message) {
 Tools.unreadMessagesCount = 0;
 Tools.newUnreadMessage = function () {
 	Tools.unreadMessagesCount++;
-	updateDocumentTitle();
 };
 
 window.addEventListener("focus", function () {
 	Tools.unreadMessagesCount = 0;
-	updateDocumentTitle();
 });
 
-function updateDocumentTitle() {
-	document.title =
-		(Tools.unreadMessagesCount ? '(' + Tools.unreadMessagesCount + ') ' : '') +
-		Tools.boardName +
-		" | WBO";
-}
 
 (function () {
 	// Scroll and hash handling
@@ -516,12 +520,14 @@ Tools.toolHooks = [
 		if (typeof (tool.listeners) !== "object") {
 			tool.listeners = {};
 		}
+
 		if (typeof (tool.onstart) !== "function") {
 			tool.onstart = function () { };
 		}
 		if (typeof (tool.onquit) !== "function") {
 			tool.onquit = function () { };
 		}
+
 	},
 	function compileListeners(tool) {
 		//compile listeners into compiledListeners
@@ -676,6 +682,123 @@ Tools.getOpacity = (function opacity() {
 	};
 })();
 
+Tools.getStyle = () => {
+	var style = document.createElement('style');
+	style.innerHTML += 'ellipse{fill:none;}';
+	style.innerHTML += 'path{fill: none;stroke-linecap: round;stroke-linejoin: round;}';
+	style.innerHTML += 'line {fill:none;stroke-linecap:round;stroke-linejoin:round;}';
+	style.innerHTML += 'rect{fill:none;}';
+	style.innerHTML += 'text{font-family:"Arial", "Helvetica", sans-serif;}';
+	return style;
+}
+
+Tools.getSvg = () => {
+	let bbox = Tools.svg.getBBox()
+	var svgElem = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+	var drawingAreaClone = Tools.drawingArea.cloneNode(true);
+	drawingAreaClone.setAttribute("fill", "none");
+	svgElem.appendChild(Tools.getStyle());
+	svgElem.appendChild(drawingAreaClone);
+	svgElem.setAttribute('viewBox', `0 0 ${bbox.width} ${bbox.height}`);
+	svgElem.setAttribute('width', bbox.width);
+	svgElem.setAttribute('height', bbox.height);
+	svgElem.setAttribute('version', "1.1");
+	svgElem.setAttribute('xmlns', "http://www.w3.org/2000/svg");
+
+	return svgElem;
+}
+
+
+Tools.download = (function downloadFile() {
+
+	function downloadSvg() {
+		let svgElem = Tools.getSvg();
+		var blob = new Blob([svgElem.outerHTML], {type: "image/svg+xml"});
+		saveAs(blob, Tools.boardName+".svg");
+	}
+
+	function download(fileType) {
+		let svgElem = Tools.getSvg();
+		let bbox = Tools.svg.getBBox();
+		let outerHTML = svgElem.outerHTML;
+		let blob = new Blob([outerHTML], { type: 'image/svg+xml;charset=utf-8' });
+		let URL = window.URL || window.webkitURL || window;
+		let blobURL = URL.createObjectURL(blob);
+		
+		let image = new Image();
+		
+		image.onload = () => {
+			let canvas = document.createElement('canvas');
+			canvas.width = bbox.width;
+			canvas.height = bbox.height;
+			let context = canvas.getContext('2d');
+			context.fillStyle = "#f1f3f6";
+			context.fillRect(0, 0, canvas.width, canvas.height);
+			// draw image in canvas starting left-0 , top - 0  
+			context.drawImage(image, 0, 0, bbox.width, bbox.height );
+			
+			canvas.toBlob(function (blob) {
+				saveAs(blob, Tools.boardName + "." + fileType);
+			});
+		};
+		image.src = blobURL;
+	}
+
+	var downloadJpgBtn = document.getElementById("downloadJpgBtn");
+	var downloadPngBtn = document.getElementById("downloadPngBtn");
+	var downloadSvgBtn = document.getElementById("downloadSvgBtn");
+
+	downloadJpgBtn.onclick = function () { download("jpg") }
+	downloadPngBtn.onclick = function () { download("png") }
+	downloadSvgBtn.onclick = downloadSvg;
+
+})();
+
+Tools.clear = (function clear() {
+	var clearBtn = document.getElementById("clearTool");
+
+	function resetBoard() {
+		while (Tools.drawingArea.lastChild) {
+			let child = Tools.drawingArea.lastChild
+			var msg = {
+				"type": "delete",
+				"id": child.id
+			};
+			Tools.send(msg);
+			Tools.drawingArea.removeChild(child);
+		}
+	}
+
+	function confirmResetBoard() {
+		if (Tools.drawingArea.lastChild) {
+			Swal.fire({
+				title: Tools.i18n.t('confirm'),
+				html: Tools.i18n.t('clear_whiteboard'),
+				icon: 'warning',
+				showDenyButton: true,
+				confirmButtonText: Tools.i18n.t('yes'),
+				denyButtonText: Tools.i18n.t('no'),
+			}).then((result) => {
+				/* Read more about isConfirmed, isDenied below */
+				if (result.isConfirmed) {
+					resetBoard()
+					Swal.fire({
+						title: Tools.i18n.t('success'),
+						html: Tools.i18n.t('cleared_whiteboard'),
+						icon: 'success',
+						confirmButtonText: Tools.i18n.t('ok'),
+					})
+
+				}
+			})
+		}
+	}
+
+	clearBtn.onclick = confirmResetBoard;
+	return function () {
+		resetBoard();
+	};
+})();
 
 //Scale the canvas on load
 Tools.svg.width.baseVal.value = document.body.clientWidth;
@@ -701,23 +824,23 @@ Tools.svg.height.baseVal.value = document.body.clientHeight;
 
 
 (function () {
-    let pos = {top: 0, scroll:0};
-    let menu = document.getElementById("menu");
-    function menu_mousedown(evt) {
-	pos = {
-	    top: menu.scrollTop,
-	    scroll: evt.clientY
+	let pos = { top: 0, scroll: 0 };
+	let menu = document.getElementById("menu");
+	function menu_mousedown(evt) {
+		pos = {
+			top: menu.scrollTop,
+			scroll: evt.clientY
+		}
+		menu.addEventListener("mousemove", menu_mousemove);
+		document.addEventListener("mouseup", menu_mouseup);
 	}
-	menu.addEventListener("mousemove", menu_mousemove);
-	document.addEventListener("mouseup", menu_mouseup);
-    }
-    function menu_mousemove(evt) {
-	const dy = evt.clientY - pos.scroll;
-	menu.scrollTop = pos.top - dy;
-    }
-    function menu_mouseup(evt) {
-	menu.removeEventListener("mousemove", menu_mousemove);
-	document.removeEventListener("mouseup", menu_mouseup);
-    }
-    menu.addEventListener("mousedown", menu_mousedown);
+	function menu_mousemove(evt) {
+		const dy = evt.clientY - pos.scroll;
+		menu.scrollTop = pos.top - dy;
+	}
+	function menu_mouseup(evt) {
+		menu.removeEventListener("mousemove", menu_mousemove);
+		document.removeEventListener("mouseup", menu_mouseup);
+	}
+	menu.addEventListener("mousedown", menu_mousedown);
 })()
