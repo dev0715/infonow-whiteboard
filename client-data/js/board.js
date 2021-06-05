@@ -367,7 +367,6 @@ Tools.send = function (data, toolName) {
 
 Tools.drawAndSend = function (data, tool) {
 	if (tool == null) tool = Tools.curTool;
-	startDrawing(data);
 	Tools.lastMessage = data;
 	tool.draw(data, true);
 	Tools.send(data, tool.name);
