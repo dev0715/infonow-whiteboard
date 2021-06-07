@@ -761,7 +761,8 @@ Tools.clear = (function clear() {
 			let child = Tools.drawingArea.lastChild
 			var msg = {
 				"type": "delete",
-				"id": child.id
+				"id": child.id,
+				"tool": "Eraser",
 			};
 			Tools.send(msg);
 			Tools.drawingArea.removeChild(child);
