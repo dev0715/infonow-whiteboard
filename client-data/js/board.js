@@ -761,10 +761,9 @@ Tools.clear = (function clear() {
 			let child = Tools.drawingArea.lastChild
 			var msg = {
 				"type": "delete",
-				"id": child.id,
-				"tool": "Eraser",
+				"id": child.id
 			};
-			Tools.send(msg);
+			Tools.send(msg, "Eraser");
 			Tools.drawingArea.removeChild(child);
 		}
 	}
