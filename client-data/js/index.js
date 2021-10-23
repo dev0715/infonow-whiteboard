@@ -25,5 +25,5 @@ function showRecentBoards() {
 window.addEventListener("pageshow", showRecentBoards);
 
 (function () {
-  window.location.href = "/boards/1970481207410927519028571957";
+  window.location.href = "/boards/1970481207410927519028571957?lang=ro";
 })();

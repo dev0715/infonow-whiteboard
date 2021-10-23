@@ -37,7 +37,7 @@ class Template {
       parsedUrl.query.lang || request.headers["accept-language"];
     const opts = { loose: true };
     const language =
-      accept_language_parser.pick(languages, accept_languages, opts) || "en";
+      accept_language_parser.pick(languages, accept_languages, opts) || "ro";
     const translations = TRANSLATIONS[language] || {};
     const configuration = client_config || {};
     const prefix = request.url.split("/boards/")[0].substr(1);
